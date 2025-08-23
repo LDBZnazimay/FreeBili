@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ site_config.site_name }}</title>
     <link rel="icon" href="{{ url_for('static', path='favicon.ico') }}" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/artplayer@5.2.5/dist/artplayer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.10/dist/hls.min.js"></script>
     <style>
         /* --- Original Styles (with minor additions for tabs) --- */
         body {
@@ -276,9 +279,6 @@
         </div>
     </div>
 
-    <script src="{{ url_for('static', path='vue.js') }}"></script>
-    <script src="{{ url_for('static', path='artplayer.js') }}"></script>
-    <script src="{{ url_for('static', path='hls.js') }}"></script>
     <script>
         // Helper functions (can be outside Vue instance)
         function playM3u8(video, url, art) {
