@@ -21,7 +21,8 @@ class BaseUrlItem(BaseModel):
 class SiteConfigModel(BaseModel):
     """完整的站点配置数据结构"""
     site_name: str
-    background_image_url: str
+    pc_background_image_url: str
+    phone_background_image_url: str
     timeout: int
     base_urls: List[BaseUrlItem]
 
