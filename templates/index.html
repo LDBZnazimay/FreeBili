@@ -15,7 +15,7 @@
             color: #333;
             margin: 0;
             padding: 20px;
-            background-image: url('{{ site_config.background_image_url }}');
+            background-image: url('{{ site_config.pc_background_image_url }}');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -66,25 +66,39 @@
         .search-form button:hover {
             background-color: #0057b3d3;
         }
+
+        /* --- MODIFIED: Status Box Styles --- */
         #status {
-            text-align: center;
-            margin: 20px;
-            color: #666;
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fdfdfdd8;
+            padding: 12px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 1001; /* Above other content */
             font-size: 1.1em;
-            margin-bottom:30px;
+            font-weight: 500;
+            white-space: nowrap;
         }
 
-/* --- New Tab Styles (Optimized) --- */
+        /* --- NEW: Vue Transition Styles --- */
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-enter, .fade-leave-to {
+            opacity: 0;
+            transform: translate(-50%, -20px);
+        }
+
+        /* --- New Tab Styles (Optimized) --- */
         .tabs-nav {
-            /* display: flex; */
-            /* border-bottom: 1px solid #ddd; */
             margin-bottom: 20px;
             overflow-x: auto; /* 关键：允许内容横向滚动 */
             padding-bottom: 5px; /* 为滚动条留出一点空间，避免遮挡 */
             -webkit-overflow-scrolling: touch; /* 在移动设备上实现更平滑的滚动效果 */
         }
-
-        /* 优化滚动条样式 (可选, 但推荐) */
         .tabs-nav::-webkit-scrollbar {
             height: 0px;
         }
@@ -95,14 +109,13 @@
         .tabs-nav::-webkit-scrollbar-thumb:hover {
             background: #aaa;
         }
-
         .tab-button {
             padding: 10px 20px;
             cursor: pointer;
             border: 1px solid #e0e0e0;
             font-size: 16px;
             white-space: nowrap;   /* 关键：防止文字换行 */
-            flex-shrink: 0;        /* 防止 flex 项目在空间不足时被压缩 */
+            flex-shrink: 0;       /* 防止 flex 项目在空间不足时被压缩 */
             background-color: #fdfdfdeb;
             border-radius: 8px;
             margin-right: 10px; /* 增加标签页之间的间距 */
@@ -111,20 +124,16 @@
             transition: box-shadow 0.3s ease, transform 0.3s ease;
             margin-bottom: 10px;
         }
-
-        /* 鼠标悬停在非激活按钮上时的效果 */
         .tab-button:not(.active):hover {
             background-color: #edededeb;
             color: #333;
         }
-
         .tab-button.active {
             font-weight: 600;
             color: #007bff;
             background-color: #fdfdfdeb;
         }
         
-
         .results-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
@@ -141,7 +150,6 @@
             transition: box-shadow 0.3s ease, transform 0.3s ease;
         }
         .result-card:hover {
-            transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
         .card-poster img {
@@ -203,7 +211,12 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgb(255, 255, 255);
+            
+            /* 核心改动： */
+            background-color: rgba(255, 255, 255, 0.65); /* 半透明白色背景 */
+            -webkit-backdrop-filter: blur(8px); /* 兼容 Safari */
+            backdrop-filter: blur(50px); /* 背景模糊效果 */
+
             align-items: center;
             justify-content: center;
         }
@@ -231,24 +244,104 @@
             max-height: 90vh;
             max-width: calc(90vh * 16 / 9);
         }
+
+        /* --- NEW: Responsive Styles for Mobile --- */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px; /* Reduce body padding */
+                background-image: url('{{ site_config.phone_background_image_url }}');
+            }
+
+            .container {
+                padding: 15px; /* Reduce container padding */
+                margin: 10px auto;
+            }
+
+            h1 {
+                font-size: 1.8em; /* Slightly smaller title */
+            }
+
+            .search-form {
+                flex-direction: column; /* Stack search input and button vertically */
+                gap: 10px;
+            }
+
+            .search-form input[type="text"],
+            .search-form button {
+                font-size: 15px; /* Adjust font size for smaller inputs */
+            }
+
+            /* Key change for results layout */
+            .results-grid {
+                grid-template-columns: 1fr; /* Force a single column layout */
+                gap: 15px;
+            }
+
+            .result-card {
+                padding: 12px; /* Adjust card padding */
+            }
+
+            .card-poster img {
+                width: 100px; /* Reduce poster size */
+                height: 150px;
+            }
+
+            .card-details h3 {
+                font-size: 1.1em; /* Adjust title size in card */
+            }
+
+            /* Make video player take up more screen space */
+            .artplayer-app {
+                width: 100vw;
+                height: 56.25vw; /* Maintain 16:9 aspect ratio */
+                max-height: 100vh;
+                max-width: 100%;
+            }
+
+            .close-button {
+                top: 5px; /* Position close button more reliably */
+                right: 10px;
+                font-size: 50px; /* Make it easier to tap */
+                background-color: rgba(0,0,0,0.3);
+                border-radius: 50%;
+                line-height: 0.8;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card-poster img {
+                width: 90px; /* Further reduce poster size on very small screens */
+                height: 135px;
+            }
+
+            .episodes-container button {
+                padding: 5px 10px; /* Smaller episode buttons */
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div id="app" class="container">
+        
         <form @submit.prevent="startSearch" class="search-form">
             <input type="text" v-model="keyword" placeholder="请输入关键词..." required>
             <button type="submit">搜索</button>
         </form>
 
-        <div style="display: none;" id="status">[[ statusMessage ]]</div>
+        <transition name="fade">
+            <div id="status" v-if="isStatusVisible">[[ statusMessage ]]</div>
+        </transition>
 
         <div v-if="tabs.length > 0" class="tabs-nav">
-            <button v-for="(tab, index) in tabs" :key="tab.name"
-                    @click="activeTab = index"
-                    :class="['tab-button', { active: activeTab === index }]">
-                [[ tab.name ]]
-            </button>
+            <div class="tabs-container">
+                <button v-for="(tab, index) in tabs" :key="tab.name"
+                        @click="activeTab = index"
+                        :class="['tab-button', { active: activeTab === index }]">
+                    [[ tab.name ]]
+                </button>
+            </div>
         </div>
 
         <div v-for="(tab, index) in tabs" :key="tab.name" v-show="activeTab === index">
@@ -273,7 +366,7 @@
 
         <div id="videoModal" class="modal" :class="{ visible: modalVisible }" @click.self="closeModal">
             <div class="modal-content">
-                <span style="display: none;" id="closeModal" class="close-button" @click="closeModal">&times;</span>
+                <span style="display: none;" id="closeModal" class="close-button" @click="closeModal"></span>
                 <div class="artplayer-app"></div>
             </div>
         </div>
@@ -344,10 +437,12 @@
 
         new Vue({
             el: '#app',
-            delimiters: ['[[', ']]'],  // 修改分隔符
+            delimiters: ['[[', ']]'],
             data: {
                 keyword: '',
-                statusMessage: '输入关键词开始搜索',
+                // MODIFIED: Added a visibility flag and changed the default message
+                statusMessage: '',
+                isStatusVisible: false, 
                 tabs: [],
                 activeTab: 0,
                 eventSource: null,
@@ -361,9 +456,12 @@
                     }
                     this.tabs = [];
                     this.activeTab = 0;
+                    
+                    // MODIFIED: Control visibility and message text
                     this.statusMessage = '🔍 正在努力搜索中，请稍候...';
+                    this.isStatusVisible = true;
 
-                    const url = `http://127.0.0.1:8000/search?keyword=${encodeURIComponent(this.keyword)}`;
+                    const url = `{{ request.url }}search?keyword=${encodeURIComponent(this.keyword)}`;
                     this.eventSource = new EventSource(url);
 
                     this.eventSource.onmessage = (event) => {
@@ -372,7 +470,6 @@
                             return;
                         }
 
-                        // Add a placeholder for resolution and fetch it asynchronously
                         sourceData.result.forEach(item => {
                             item.resolution = '加载中...';
                             if (item.videos && item.videos.length > 0) {
@@ -391,7 +488,11 @@
                     };
 
                     this.eventSource.onerror = () => {
-                        this.statusMessage = '搜索完成。';
+                        // MODIFIED: Update message and hide after a delay
+                        this.statusMessage = '搜索完成';
+                        setTimeout(() => {
+                            this.isStatusVisible = false;
+                        }, 2000); // Hide after 2 seconds
                         this.eventSource.close();
                     };
                 },
@@ -431,10 +532,16 @@
                         }
 
                         this.artInstance = new Artplayer(playerOptions);
+                        
+                        // Show the close button only after the player is ready to avoid visual glitches
+                        this.artInstance.on('ready', () => {
+                           document.getElementById('closeModal').style.display = 'none';
+                        });
                     });
                 },
                 closeModal() {
                     this.modalVisible = false;
+                    document.getElementById('closeModal').style.display = 'none'; // Hide button immediately
                     if (this.artInstance) {
                         this.artInstance.destroy();
                         this.artInstance = null;

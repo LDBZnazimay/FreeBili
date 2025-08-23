@@ -1,6 +1,7 @@
 {
     "site_name": "自由哔站",
-    "background_image_url": "https://www.loliapi.com/acg/pc/",
+    "pc_background_image_url": "https://www.loliapi.com/acg/pc/",
+    "phone_background_image_url": "https://www.loliapi.com/acg/pe/",
     "timeout": 5,
     "base_urls": [
         
