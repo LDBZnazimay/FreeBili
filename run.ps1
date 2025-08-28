@@ -1,0 +1,1 @@
+Start-Process -FilePath "uv" -ArgumentList "run", "fastapi", "run", "main.py" -WindowStyle Hidden
