@@ -17,7 +17,7 @@
 
 ## Docker 部署 (推荐)
 ```
-docker run -d -p 8000:8000 silvery886/freebili:1.12
+docker run -d -p 8000:8000 silvery886/freebili:1.13
 ```
 
 ## 开发启动
