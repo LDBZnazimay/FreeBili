@@ -179,7 +179,7 @@
             height: 100%;
             background-color: #e9ecef;
             color: #495057;
-            /* padding: 20px; */
+            padding: 20px;
             box-sizing: border-box;
         }
         .webview-placeholder h3 {
@@ -279,12 +279,12 @@
                 
                 <div class="player-area">
                     <div v-if="isWebView" class="webview-placeholder">
-                        <!-- <h3>此内容需要在原网页播放</h3>
+                        <h3>此内容需要在原网页播放</h3>
                         <p>为确保正常观看，请点击下方按钮在新标签页中打开。</p>
                         <a :href="activeVideo.video_url" target="_blank" rel="noopener noreferrer" class="webview-button">
                             在新标签页中打开
-                        </a> -->
-                        <iframe  width=100% height=100% :src="activeVideo.video_url" title="description"></iframe>
+                        </a>
+                        <!-- <iframe  width=100% height=100% :src="activeVideo.video_url" title="description"></iframe> -->
                     </div>
                     <div v-else class="artplayer-app"></div>
                 </div>
