@@ -111,6 +111,12 @@
         }
 
         .artplayer-app { width: 100%; height: 100%; }
+        
+        .iframe-container, .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
 
         .episodes-sidebar {
             flex-shrink: 0;
@@ -125,6 +131,7 @@
             text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px;
         }
         
+        /* MODIFIED: Source Selector Styles */
         .source-selector-wrapper {
             margin-bottom: 15px;
         }
@@ -167,44 +174,6 @@
         }
         .episodes-list button.active {
             background-color: #007bff; color: white; border-color: #007bff; font-weight: bold;
-        }
-        
-        .webview-placeholder {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            width: 100%;
-            height: 100%;
-            background-color: #e9ecef;
-            color: #495057;
-            /* padding: 20px; */
-            box-sizing: border-box;
-        }
-        .webview-placeholder h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 1.5em;
-        }
-        .webview-placeholder p {
-            margin-bottom: 20px;
-            font-size: 1em;
-        }
-        .webview-button {
-            display: inline-block;
-            padding: 12px 25px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #fff;
-            background-color: #007bff;
-            border: none;
-            border-radius: 6px;
-            text-decoration: none;
-            transition: background-color 0.3s ease;
-        }
-        .webview-button:hover {
-            background-color: #0056b3;
         }
 
         /* --- Responsive Styles --- */
@@ -278,13 +247,8 @@
                 <span class="close-button" @click="closePlayerModal">&times;</span>
                 
                 <div class="player-area">
-                    <div v-if="isWebView" class="webview-placeholder">
-                        <!-- <h3>此内容需要在原网页播放</h3>
-                        <p>为确保正常观看，请点击下方按钮在新标签页中打开。</p>
-                        <a :href="activeVideo.video_url" target="_blank" rel="noopener noreferrer" class="webview-button">
-                            在新标签页中打开
-                        </a> -->
-                        <iframe  width=100% height=100% :src="activeVideo.video_url" title="description"></iframe>
+                    <div v-if="isWebView" class="iframe-container">
+                        <iframe :src="activeVideo.video_url" allowfullscreen></iframe>
                     </div>
                     <div v-else class="artplayer-app"></div>
                 </div>
@@ -379,10 +343,11 @@
                 aggregatedResults: [],
                 eventSource: null,
                 artInstance: null,
+                // State for the unified player modal
                 playerModalVisible: false,
-                selectedItem: null,
+                selectedItem: null, // Holds the aggregated movie object
                 activeVideo: null,
-                selectedSource: null
+                selectedSource: null // Holds the currently selected source object
             },
             computed: {
                 isWebView() {
@@ -393,6 +358,7 @@
                 sortedSources() {
                     if (!this.selectedItem || !this.selectedItem.sources) return [];
                     const playableSources = this.selectedItem.sources.filter(s => s.episode_count > 0);
+                    // Sort by resolution descending
                     return playableSources.sort((a, b) => {
                         const resA = this.parseResolution(a.resolution);
                         const resB = this.parseResolution(b.resolution);
@@ -401,36 +367,18 @@
                 }
             },
             watch: {
-                // ##################################################
-                // ### START OF THE MODIFIED CODE ###
-                // ##################################################
                 activeVideo(newVideo) {
-                    // Step 1: Always destroy the previous Artplayer instance if it exists.
-                    // This is done synchronously before Vue updates the DOM.
-                    if (this.artInstance) {
-                        this.artInstance.destroy();
-                        this.artInstance = null;
-                    }
-
-                    // If there's no new video, do nothing further.
                     if (!newVideo) return;
-
-                    // Step 2: If the new video is a playable format (not a WebView),
-                    // initialize a new Artplayer instance.
-                    // We use $nextTick to ensure this runs AFTER Vue has updated the DOM
-                    // and the '.artplayer-app' div is ready.
-                    if (!this.isWebView) {
-                        this.$nextTick(() => {
+                    this.$nextTick(() => {
+                        if (this.artInstance) {
+                            this.artInstance.destroy();
+                            this.artInstance = null;
+                        }
+                        if (!this.isWebView) {
                             this.initArtplayer(newVideo);
-                        });
-                    }
-                    // If the new video IS a WebView, we do nothing here. Vue's v-if
-                    // will automatically display the placeholder, and we've already
-                    // destroyed the old player.
+                        }
+                    });
                 },
-                // ##################################################
-                // ### END OF THE MODIFIED CODE ###
-                // ##################################################
                 selectedSource(newSource, oldSource) {
                     if (newSource && oldSource && newSource !== oldSource) {
                         if (newSource.videos && newSource.videos.length > 0) {
@@ -516,7 +464,10 @@
                 },
                 closePlayerModal() {
                     this.playerModalVisible = false;
-                    // The activeVideo watcher will handle destroying the player instance now
+                    if (this.artInstance) {
+                        this.artInstance.destroy();
+                        this.artInstance = null;
+                    }
                     this.selectedItem = null;
                     this.activeVideo = null;
                     this.selectedSource = null;
@@ -529,7 +480,7 @@
                         container: '.artplayer-app',
                         url: video.video_url,
                         title: `${this.selectedItem.display_name} (${this.selectedSource.source_name}) - ${video.name}`,
-                        autoplay: false,
+                        autoplay: false, // MODIFIED: Autoplay disabled
                         autoSize: false,
                         setting: true,
                         flip: true,
