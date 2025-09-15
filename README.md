@@ -6,11 +6,17 @@
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Docker Ready](https://img.shields.io/badge/Docker-ready-blue?logo=docker)
 
-
 ## ✨ 功能特性
 - 🔍 **多源并行搜索**：支持多资源站点并行搜索
 - 🚀 **SSE流式接口**：流式API接口，解决资源站点API有的响应时间长，有的响应时间短，时间短响应的接口会立刻返回
 - 📄 **极简部署**：一条 Docker 命令即可启动项目
+
+## ✨ 新功能 RoadMap
+
+- [ ] 支持收藏视频，打开收藏自动更新集数
+- [ ] 支持链接直接跳转到视频，指定集数
+- [ ] 视频列表将高分辨率的排在前面
+
 ## 页面展示
 ![开始界面1](docs/1.jpg)
 ![开始界面2](docs/2.jpg)
