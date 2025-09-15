@@ -71,7 +71,9 @@ def parse_cms_data(source_name: str, cms_list: List[Dict[str, Any]]) -> Dict[str
             results.append({
                 "name": item.get("vod_name", "未知名称"),
                 "vod_pic": item.get("vod_pic", ""),
-                "videos": videos
+                "videos": videos,
+                "vod_id": item.get("vod_id",""),
+                "vod_douban_id": item.get("vod_douban_id","")
             })
             
     return {

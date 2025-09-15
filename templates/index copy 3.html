@@ -55,7 +55,16 @@
         }
         .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease, transform 0.5s ease; }
         .fade-enter, .fade-leave-to { opacity: 0; transform: translate(-50%, -20px); }
-
+        .tabs-nav { margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
+        .tabs-nav::-webkit-scrollbar { height: 0px; }
+        .tab-button {
+            padding: 10px 20px; cursor: pointer; border: 1px solid #e0e0e0;
+            font-size: 16px; white-space: nowrap; flex-shrink: 0;
+            background-color: #fdfdfdeb; border-radius: 8px; margin-right: 10px;
+            transition: all 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px;
+        }
+        .tab-button:not(.active):hover { background-color: #edededeb; color: #333; }
+        .tab-button.active { font-weight: 600; color: #007bff; background-color: #fdfdfdeb; }
         .results-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 25px; margin-top: 20px;
@@ -68,14 +77,18 @@
         .result-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
         .poster-wrapper { position: relative; }
         .poster-wrapper img { width: 100%; height: 270px; object-fit: cover; display: block; }
+        .episode-count {
+            position: absolute; top: 8px; right: 8px; background-color: rgba(0, 0, 0, 0.75);
+            color: white; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 500;
+        }
         .card-details { padding: 12px; text-align: center; }
         .card-details h3 {
             margin: 5px 0; font-size: 0.8em; font-weight: 600;
-            overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .card-source { font-size: 0.55em; color: #555; margin: 3px 0 0 0; }
         
-        /* --- Unified Player Modal Styles --- */
+        /* --- NEW: Unified Player Modal Styles --- */
         .modal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%;
             height: 100%; overflow: auto; background-color: rgba(255, 255, 255, 0.65);
@@ -92,7 +105,7 @@
             border-radius: 12px;
             width: 90vw;
             height: 85vh;
-            overflow: hidden;
+            overflow: hidden; /* Important for child elements */
         }
 
         .player-modal-content .close-button {
@@ -103,7 +116,7 @@
         .player-modal-content .close-button:hover { color: #333; }
         
         .player-area {
-            flex-grow: 1;
+            flex-grow: 1; /* Takes remaining space */
             background-color: #000;
             display: flex;
             align-items: center;
@@ -119,7 +132,7 @@
         }
 
         .episodes-sidebar {
-            flex-shrink: 0;
+            flex-shrink: 0; /* Prevents sidebar from shrinking */
             width: 320px;
             background-color: #f7f7f7;
             padding: 20px;
@@ -127,24 +140,11 @@
             flex-direction: column;
         }
         .episodes-sidebar h3 {
-            margin-top: 0; margin-bottom: 10px; font-size: 1.4em;
+            margin-top: 0; margin-bottom: 15px; font-size: 1.4em;
             text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px;
         }
-        
-        /* MODIFIED: Source Selector Styles */
-        .source-selector-wrapper {
-            margin-bottom: 15px;
-        }
-        .source-selector-wrapper select {
-            width: 100%;
-            padding: 8px 12px;
-            font-size: 15px;
-            border-radius: 6px;
-            border: 1px solid #ccc;
-            background-color: #fff;
-        }
-
         .episodes-list {
+
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
@@ -152,23 +152,28 @@
             flex-grow: 1;
             align-content: flex-start;
         }
-        .episodes-list button {
-            height: 38px;
-            padding: 12px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            box-sizing: border-box;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            background-color: #f1f1f1bf;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s ease;
-        }
+.episodes-list button {
+    /* --- New Styles for Uniform Size & Centering --- */
+    height: 38px;              /* Set a fixed height for consistency */
+    padding: 12px;            /* Use minimal padding for text spacing, not for sizing */
+    display: inline-flex;      /* Use flexbox for powerful alignment */
+    align-items: center;       /* Vertically center the text */
+    justify-content: center;   /* Horizontally center the text */
+    box-sizing: border-box;    /* Ensures padding is included within the width/height */
+
+    /* --- Styles for Handling Long Text --- */
+    white-space: nowrap;       /* Prevent text from wrapping to a new line */
+    overflow: hidden;          /* Hide any text that overflows the button's width */
+    text-overflow: ellipsis;   /* Add '...' to overflowing text (e.g., "特别篇...") */
+
+    /* --- Original Styles (Slightly Adjusted) --- */
+    background-color: #f1f1f1bf;
+    border: 1px solid #ccc;
+    border-radius: 6px;        /* Slightly larger radius for a modern look */
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
         .episodes-list button:hover {
             background-color: #007bffbf; color: white; border-color: #007bff; transform: scale(1.05);
         }
@@ -189,6 +194,7 @@
             .results-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
             .poster-wrapper img { height: 240px; }
             
+            /* Modal adjustments for mobile */
             .player-modal-content {
                 flex-direction: column;
                 width: 100vw;
@@ -203,17 +209,21 @@
             .episodes-sidebar {
                 width: 100%;
                 flex-grow: 1;
-                box-sizing: border-box;
+                box-sizing: border-box; /* Include padding in width */
             }
             .player-modal-content .close-button {
                 color: white; background-color: rgba(0,0,0,0.4); border-radius: 50%;
-                width: 35px; height: 35px; line-height: 30px; text-align: center;
+                width: 35px; height: 35px; line-height: 35px; text-align: center;
                 top: 10px; right: 10px; font-size: 24px;
             }
         }
         @media (max-width: 480px) {
             .results-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
             .poster-wrapper img { height: 200px; }
+        }
+        .title_text{
+            font-size: 50px; width: 100%; height: 130px; color: white;
+            text-align: center; line-height: 120px;
         }
     </style>
 </head>
@@ -230,20 +240,35 @@
             <div id="status" v-if="isStatusVisible">[[ statusMessage ]]</div>
         </transition>
 
-        <div class="results-grid">
-            <div v-for="item in aggregatedResults" :key="item.vod_douban_id" class="result-card" @click="openPlayerModal(item)">
-                <div class="poster-wrapper">
-                    <img :src="item.vod_pic" :alt="item.display_name" @error="imageOnError">
-                </div>
-                <div class="card-details">
-                    <h3>[[ item.display_name ]]</h3>
-                    <p class="card-source">豆瓣ID: [[ item.vod_douban_id ]]</p>
+        <div v-if="tabs.length > 1" class="tabs-nav">
+            <div class="tabs-container">
+                <button v-for="(tab, index) in tabs" :key="tab.name"
+                        @click="activeTab = index"
+                        :class="['tab-button', { active: activeTab === index }]">
+                    [[ tab.name ]]
+                </button>
+            </div>
+        </div>
+
+        <div v-for="(tab, index) in tabs" :key="tab.name" v-show="activeTab === index">
+            <div class="results-grid">
+                <div v-for="item in tab.results" :key="item.name + item.source_name" class="result-card" @click="openPlayerModal(item)">
+                    <div class="poster-wrapper">
+                        <img :src="item.vod_pic" :alt="item.name" @error="imageOnError">
+                        <div class="episode-count" v-if="item.videos && item.videos.length > 0">
+                            [[ item.videos.length ]] 集
+                        </div>
+                    </div>
+                    <div class="card-details">
+                        <h3>[[ item.name ]]</h3>
+                         <p class="card-source">[[ tab.name === '聚合' ? item.source_name : tab.name ]] [[ item.resolution ]]</p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div id="playerModal" class="modal" :class="{ visible: playerModalVisible }" @click.self="closePlayerModal">
-            <div class="player-modal-content" v-if="selectedItem && selectedSource">
+            <div class="player-modal-content" v-if="selectedItem">
                 <span class="close-button" @click="closePlayerModal">&times;</span>
                 
                 <div class="player-area">
@@ -254,18 +279,9 @@
                 </div>
                 
                 <div class="episodes-sidebar">
-                    <h3>[[ selectedItem.display_name ]]</h3>
-                    
-                    <div v-if="selectedItem.sources.length > 1" class="source-selector-wrapper">
-                        <select v-model="selectedSource">
-                            <option v-for="source in sortedSources" :key="source.source_name" :value="source">
-                                [[ source.source_name ]] ([[ source.episode_count ]] 集) - [[ source.resolution_display ]]
-                            </option>
-                        </select>
-                    </div>
-                    
+                    <h3>[[ selectedItem.name ]]</h3>
                     <div class="episodes-list">
-                        <button v-for="video in selectedSource.videos"
+                        <button v-for="video in selectedItem.videos"
                                 :key="video.name"
                                 @click="selectEpisode(video)"
                                 :class="{ active: activeVideo === video }">
@@ -295,7 +311,6 @@
         }
 
         async function getVideoResolution(url) {
-            // This function remains unchanged
             const lowerCaseUrl = url.toLowerCase();
             if (lowerCaseUrl.endsWith('.m3u8')) {
                 try {
@@ -325,11 +340,19 @@
                 return new Promise((resolve) => {
                     const video = document.createElement('video');
                     video.preload = 'metadata';
-                    video.onloadedmetadata = () => { resolve(`${video.videoHeight}P`); video.remove(); };
-                    video.onerror = () => { resolve('获取失败'); video.remove(); };
+                    video.onloadedmetadata = () => {
+                        resolve(`${video.videoHeight}P`);
+                        video.remove();
+                    };
+                    video.onerror = () => {
+                        resolve('获取失败');
+                        video.remove();
+                    };
                     video.src = url;
                 });
-            } else { return '网页'; }
+            } else {
+                return '网页';
+            }
         }
 
         new Vue({
@@ -340,97 +363,72 @@
                 keyword: '',
                 statusMessage: '',
                 isStatusVisible: false, 
-                aggregatedResults: [],
+                tabs: [],
+                activeTab: 0,
                 eventSource: null,
                 artInstance: null,
-                // State for the unified player modal
+                // NEW: State for the unified player modal
                 playerModalVisible: false,
-                selectedItem: null, // Holds the aggregated movie object
-                activeVideo: null,
-                selectedSource: null // Holds the currently selected source object
+                selectedItem: null,
+                activeVideo: null
             },
             computed: {
                 isWebView() {
                     if (!this.activeVideo || !this.activeVideo.video_url) return false;
                     const url = this.activeVideo.video_url.toLowerCase();
                     return !url.endsWith('.m3u8') && !url.endsWith('.mp4');
-                },
-                sortedSources() {
-                    if (!this.selectedItem || !this.selectedItem.sources) return [];
-                    const playableSources = this.selectedItem.sources.filter(s => s.episode_count > 0);
-                    // Sort by resolution descending
-                    return playableSources.sort((a, b) => {
-                        const resA = this.parseResolution(a.resolution);
-                        const resB = this.parseResolution(b.resolution);
-                        return resB - resA; 
-                    });
                 }
             },
             watch: {
-                activeVideo(newVideo) {
+                // This watcher triggers whenever activeVideo changes
+                activeVideo(newVideo, oldVideo) {
                     if (!newVideo) return;
+
+                    // Use nextTick to ensure the DOM has been updated (v-if/v-else)
                     this.$nextTick(() => {
+                        // Always destroy the old player instance if it exists
                         if (this.artInstance) {
                             this.artInstance.destroy();
                             this.artInstance = null;
                         }
+
+                        // If it's not a web view, initialize Artplayer
                         if (!this.isWebView) {
                             this.initArtplayer(newVideo);
                         }
+                        // If it IS a web view, the iframe's :src is already bound, so we don't need to do anything else.
                     });
-                },
-                selectedSource(newSource, oldSource) {
-                    if (newSource && oldSource && newSource !== oldSource) {
-                        if (newSource.videos && newSource.videos.length > 0) {
-                            this.selectEpisode(newSource.videos[0]);
-                        } else {
-                            this.activeVideo = null; // No videos in the new source
-                        }
-                    }
                 }
             },
             methods: {
                 startSearch() {
                     if (this.eventSource) this.eventSource.close();
-                    this.aggregatedResults = [];
+                    this.tabs = [{ name: '聚合', results: [] }];
+                    this.activeTab = 0;
                     this.statusMessage = '🔍 正在努力搜索中，请稍候...';
                     this.isStatusVisible = true;
                     const url = `/search?keyword=${encodeURIComponent(this.keyword)}`;
                     this.eventSource = new EventSource(url);
                     this.isBlurred = true;
 
-                    this.eventSource.onmessage = async (event) => {
+                    this.eventSource.onmessage = (event) => {
                         const sourceData = JSON.parse(event.data);
                         if (!sourceData || !sourceData.result || sourceData.result.length === 0) return;
 
-                        const processedItems = await Promise.all(sourceData.result.map(async (item) => {
+                        sourceData.result.forEach(item => {
                             item.source_name = sourceData.name;
-                            item.episode_count = item.videos ? item.videos.length : 0;
-                            
-                            let resolution = '无视频源';
-                            if (item.episode_count > 0) {
-                                resolution = await getVideoResolution(item.videos[0].video_url);
-                            }
-                            item.resolution = resolution; // For sorting
-                            item.resolution_display = resolution === '网页' ? '跳转网页播放' : resolution; // For display
-
-                            return item;
-                        }));
-
-                        processedItems.forEach(item => {
-                            if (!item.vod_douban_id) return;
-                            const existingMovie = this.aggregatedResults.find(movie => movie.vod_douban_id === item.vod_douban_id);
-                            if (existingMovie) {
-                                existingMovie.sources.push(item);
-                            } else {
-                                this.aggregatedResults.push({
-                                    display_name: item.name,
-                                    vod_douban_id: item.vod_douban_id,
-                                    vod_pic: item.vod_pic,
-                                    sources: [item]
+                            item.resolution = '加载中...';
+                            if (item.videos && item.videos.length > 0) {
+                                getVideoResolution(item.videos[0].video_url).then(res => {
+                                    item.resolution = res;
                                 });
+                            } else {
+                                item.resolution = '无视频源';
                             }
                         });
+                        
+                        this.tabs[0].results.push(...sourceData.result);
+                        this.tabs.push({ name: sourceData.name, results: sourceData.result });
                     };
 
                     this.eventSource.onerror = () => {
@@ -439,48 +437,41 @@
                         this.eventSource.close();
                     };
                 },
-                parseResolution(res) {
-                    if (typeof res !== 'string') return -3;
-                    if (res.includes('P')) {
-                        return parseInt(res, 10) || 0;
+                // NEW: Method to open the combined player modal
+                openPlayerModal(item) {
+                    if (!item.videos || item.videos.length === 0) {
+                        this.statusMessage = '该项目没有可播放的视频源';
+                        this.isStatusVisible = true;
+                        setTimeout(() => { this.isStatusVisible = false; }, 2000);
+                        return;
                     }
-                    if (res === '网页') return -2;
-                    if (res === '未知') return -1;
-                    return 0; // for '获取失败' etc.
+                    this.selectedItem = item;
+                    this.playerModalVisible = true;
+                    // Automatically select and play the first episode
+                    this.selectEpisode(item.videos[0]);
                 },
-                openPlayerModal(aggregatedItem) {
-                    this.selectedItem = aggregatedItem; 
-                    
-                    this.$nextTick(() => {
-                        if (this.sortedSources && this.sortedSources.length > 0) {
-                            this.playerModalVisible = true;
-                            this.selectedSource = this.sortedSources[0]; // Auto-select the best (first) source
-                            this.selectEpisode(this.sortedSources[0].videos[0]);
-                        } else {
-                            this.showStatus("该项目没有可播放的视频源");
-                            this.selectedItem = null; // Clean up if no sources are found
-                        }
-                    });
-                },
+                // NEW: Method to close the combined player modal and clean up
                 closePlayerModal() {
                     this.playerModalVisible = false;
                     if (this.artInstance) {
                         this.artInstance.destroy();
                         this.artInstance = null;
                     }
+                    // Reset state
                     this.selectedItem = null;
                     this.activeVideo = null;
-                    this.selectedSource = null;
                 },
+                // NEW: Method to select an episode from the list
                 selectEpisode(video) {
                     this.activeVideo = video;
                 },
+                // NEW: Centralized method to initialize Artplayer
                 initArtplayer(video) {
                     const playerOptions = {
                         container: '.artplayer-app',
                         url: video.video_url,
-                        title: `${this.selectedItem.display_name} (${this.selectedSource.source_name}) - ${video.name}`,
-                        autoplay: false, // MODIFIED: Autoplay disabled
+                        title: `${this.selectedItem.name} - ${video.name}`,
+                        autoplay: true,
                         autoSize: false,
                         setting: true,
                         flip: true,
@@ -499,11 +490,6 @@
                 },
                 imageOnError(event) {
                     event.target.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-                },
-                showStatus(message, duration = 2000) {
-                    this.statusMessage = message;
-                    this.isStatusVisible = true;
-                    setTimeout(() => { this.isStatusVisible = false; }, duration);
                 }
             }
         });

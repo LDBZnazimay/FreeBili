@@ -55,7 +55,16 @@
         }
         .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease, transform 0.5s ease; }
         .fade-enter, .fade-leave-to { opacity: 0; transform: translate(-50%, -20px); }
-
+        .tabs-nav { margin-bottom: 20px; overflow-x: auto; padding-bottom: 5px; -webkit-overflow-scrolling: touch; }
+        .tabs-nav::-webkit-scrollbar { height: 0px; }
+        .tab-button {
+            padding: 10px 20px; cursor: pointer; border: 1px solid #e0e0e0;
+            font-size: 16px; white-space: nowrap; flex-shrink: 0;
+            background-color: #fdfdfdeb; border-radius: 8px; margin-right: 10px;
+            transition: all 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px;
+        }
+        .tab-button:not(.active):hover { background-color: #edededeb; color: #333; }
+        .tab-button.active { font-weight: 600; color: #007bff; background-color: #fdfdfdeb; }
         .results-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 25px; margin-top: 20px;
@@ -68,10 +77,14 @@
         .result-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
         .poster-wrapper { position: relative; }
         .poster-wrapper img { width: 100%; height: 270px; object-fit: cover; display: block; }
+        .episode-count {
+            position: absolute; top: 8px; right: 8px; background-color: rgba(0, 0, 0, 0.75);
+            color: white; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 500;
+        }
         .card-details { padding: 12px; text-align: center; }
         .card-details h3 {
             margin: 5px 0; font-size: 0.8em; font-weight: 600;
-            overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .card-source { font-size: 0.55em; color: #555; margin: 3px 0 0 0; }
         
@@ -131,7 +144,7 @@
             text-align: center; border-bottom: 2px solid #eee; padding-bottom: 10px;
         }
         
-        /* MODIFIED: Source Selector Styles */
+        /* NEW: Source Selector Styles */
         .source-selector-wrapper {
             margin-bottom: 15px;
         }
@@ -207,7 +220,7 @@
             }
             .player-modal-content .close-button {
                 color: white; background-color: rgba(0,0,0,0.4); border-radius: 50%;
-                width: 35px; height: 35px; line-height: 30px; text-align: center;
+                width: 35px; height: 35px; line-height: 35px; text-align: center;
                 top: 10px; right: 10px; font-size: 24px;
             }
         }
@@ -230,14 +243,38 @@
             <div id="status" v-if="isStatusVisible">[[ statusMessage ]]</div>
         </transition>
 
-        <div class="results-grid">
-            <div v-for="item in aggregatedResults" :key="item.vod_douban_id" class="result-card" @click="openPlayerModal(item)">
-                <div class="poster-wrapper">
-                    <img :src="item.vod_pic" :alt="item.display_name" @error="imageOnError">
+        <div v-if="tabs.length > 1" class="tabs-nav">
+            <div class="tabs-container">
+                <button v-for="(tab, index) in tabs" :key="tab.name"
+                        @click="activeTab = index"
+                        :class="['tab-button', { active: activeTab === index }]">
+                    [[ tab.name ]]
+                </button>
+            </div>
+        </div>
+
+        <div v-for="(tab, index) in tabs" :key="tab.name" v-show="activeTab === index">
+            <div class="results-grid">
+                <div v-if="tab.name === '聚合'" v-for="item in tab.results" :key="item.vod_douban_id" class="result-card" @click="openPlayerModal(item)">
+                    <div class="poster-wrapper">
+                        <img :src="item.vod_pic" :alt="item.display_name" @error="imageOnError">
+                    </div>
+                    <div class="card-details">
+                        <h3>[[ item.display_name ]]</h3>
+                        <p class="card-source">豆瓣ID: [[ item.vod_douban_id ]]</p>
+                    </div>
                 </div>
-                <div class="card-details">
-                    <h3>[[ item.display_name ]]</h3>
-                    <p class="card-source">豆瓣ID: [[ item.vod_douban_id ]]</p>
+                <div v-else v-for="item in tab.results" :key="item.name + item.source_name" class="result-card" @click="openPlayerModalFromSource(item)">
+                    <div class="poster-wrapper">
+                        <img :src="item.vod_pic" :alt="item.name" @error="imageOnError">
+                        <div class="episode-count" v-if="item.videos && item.videos.length > 0">
+                            [[ item.videos.length ]] 集
+                        </div>
+                    </div>
+                    <div class="card-details">
+                        <h3>[[ item.name ]]</h3>
+                        <p class="card-source">[[ tab.name ]] [[ item.resolution ]]</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -258,8 +295,8 @@
                     
                     <div v-if="selectedItem.sources.length > 1" class="source-selector-wrapper">
                         <select v-model="selectedSource">
-                            <option v-for="source in sortedSources" :key="source.source_name" :value="source">
-                                [[ source.source_name ]] ([[ source.episode_count ]] 集) - [[ source.resolution_display ]]
+                            <option v-for="source in selectedItem.sources" :key="source.source_name" :value="source">
+                                [[ source.source_name ]]
                             </option>
                         </select>
                     </div>
@@ -340,30 +377,21 @@
                 keyword: '',
                 statusMessage: '',
                 isStatusVisible: false, 
-                aggregatedResults: [],
+                tabs: [],
+                activeTab: 0,
                 eventSource: null,
                 artInstance: null,
                 // State for the unified player modal
                 playerModalVisible: false,
-                selectedItem: null, // Holds the aggregated movie object
+                selectedItem: null, // Will now hold the aggregated movie object
                 activeVideo: null,
-                selectedSource: null // Holds the currently selected source object
+                selectedSource: null // NEW: Holds the currently selected source object
             },
             computed: {
                 isWebView() {
                     if (!this.activeVideo || !this.activeVideo.video_url) return false;
                     const url = this.activeVideo.video_url.toLowerCase();
                     return !url.endsWith('.m3u8') && !url.endsWith('.mp4');
-                },
-                sortedSources() {
-                    if (!this.selectedItem || !this.selectedItem.sources) return [];
-                    const playableSources = this.selectedItem.sources.filter(s => s.episode_count > 0);
-                    // Sort by resolution descending
-                    return playableSources.sort((a, b) => {
-                        const resA = this.parseResolution(a.resolution);
-                        const resB = this.parseResolution(b.resolution);
-                        return resB - resA; 
-                    });
                 }
             },
             watch: {
@@ -379,6 +407,7 @@
                         }
                     });
                 },
+                // NEW: Watcher to handle source changes
                 selectedSource(newSource, oldSource) {
                     if (newSource && oldSource && newSource !== oldSource) {
                         if (newSource.videos && newSource.videos.length > 0) {
@@ -392,45 +421,54 @@
             methods: {
                 startSearch() {
                     if (this.eventSource) this.eventSource.close();
-                    this.aggregatedResults = [];
+                    this.tabs = [{ name: '聚合', results: [] }];
+                    this.activeTab = 0;
                     this.statusMessage = '🔍 正在努力搜索中，请稍候...';
                     this.isStatusVisible = true;
                     const url = `/search?keyword=${encodeURIComponent(this.keyword)}`;
                     this.eventSource = new EventSource(url);
                     this.isBlurred = true;
 
-                    this.eventSource.onmessage = async (event) => {
+                    this.eventSource.onmessage = (event) => {
                         const sourceData = JSON.parse(event.data);
                         if (!sourceData || !sourceData.result || sourceData.result.length === 0) return;
 
-                        const processedItems = await Promise.all(sourceData.result.map(async (item) => {
+                        // Process resolution for individual source tab
+                        sourceData.result.forEach(item => {
                             item.source_name = sourceData.name;
-                            item.episode_count = item.videos ? item.videos.length : 0;
-                            
-                            let resolution = '无视频源';
-                            if (item.episode_count > 0) {
-                                resolution = await getVideoResolution(item.videos[0].video_url);
+                            item.resolution = '加载中...';
+                            if (item.videos && item.videos.length > 0) {
+                                getVideoResolution(item.videos[0].video_url).then(res => {
+                                    item.resolution = res;
+                                });
+                            } else {
+                                item.resolution = '无视频源';
                             }
-                            item.resolution = resolution; // For sorting
-                            item.resolution_display = resolution === '网页' ? '跳转网页播放' : resolution; // For display
+                        });
 
-                            return item;
-                        }));
-
-                        processedItems.forEach(item => {
-                            if (!item.vod_douban_id) return;
-                            const existingMovie = this.aggregatedResults.find(movie => movie.vod_douban_id === item.vod_douban_id);
+                        // ** NEW: Aggregation Logic **
+                        const aggregateResults = this.tabs[0].results;
+                        sourceData.result.forEach(item => {
+                            if (!item.vod_douban_id) return; // Skip items without a Douban ID for aggregation
+                            
+                            const existingMovie = aggregateResults.find(movie => movie.vod_douban_id === item.vod_douban_id);
+                            
                             if (existingMovie) {
+                                // Movie exists, just add the new source
                                 existingMovie.sources.push(item);
                             } else {
-                                this.aggregatedResults.push({
+                                // New movie, create the aggregated object
+                                aggregateResults.push({
                                     display_name: item.name,
                                     vod_douban_id: item.vod_douban_id,
                                     vod_pic: item.vod_pic,
-                                    sources: [item]
+                                    sources: [item] // Start the sources array with the current item
                                 });
                             }
                         });
+                        
+                        // Add the individual source tab
+                        this.tabs.push({ name: sourceData.name, results: sourceData.result });
                     };
 
                     this.eventSource.onerror = () => {
@@ -439,28 +477,34 @@
                         this.eventSource.close();
                     };
                 },
-                parseResolution(res) {
-                    if (typeof res !== 'string') return -3;
-                    if (res.includes('P')) {
-                        return parseInt(res, 10) || 0;
-                    }
-                    if (res === '网页') return -2;
-                    if (res === '未知') return -1;
-                    return 0; // for '获取失败' etc.
-                },
+                // Method to open from the "聚合" tab
                 openPlayerModal(aggregatedItem) {
-                    this.selectedItem = aggregatedItem; 
+                    if (!aggregatedItem.sources || aggregatedItem.sources.length === 0) return;
                     
-                    this.$nextTick(() => {
-                        if (this.sortedSources && this.sortedSources.length > 0) {
-                            this.playerModalVisible = true;
-                            this.selectedSource = this.sortedSources[0]; // Auto-select the best (first) source
-                            this.selectEpisode(this.sortedSources[0].videos[0]);
-                        } else {
-                            this.showStatus("该项目没有可播放的视频源");
-                            this.selectedItem = null; // Clean up if no sources are found
+                    const firstValidSource = aggregatedItem.sources.find(s => s.videos && s.videos.length > 0);
+                    if (!firstValidSource) {
+                        this.showStatus("该项目没有可播放的视频源");
+                        return;
+                    }
+
+                    this.selectedItem = aggregatedItem;
+                    this.selectedSource = firstValidSource;
+                    this.playerModalVisible = true;
+                    this.selectEpisode(firstValidSource.videos[0]);
+                },
+                // Method to find and open the player when clicking from a source-specific tab
+                openPlayerModalFromSource(item) {
+                    const aggregatedMovie = this.tabs[0].results.find(m => m.vod_douban_id === item.vod_douban_id);
+                    if (aggregatedMovie) {
+                        this.selectedItem = aggregatedMovie;
+                        this.selectedSource = aggregatedMovie.sources.find(s => s.source_name === item.source_name) || aggregatedMovie.sources[0];
+                        this.playerModalVisible = true;
+                        if (item.videos && item.videos.length > 0) {
+                            this.selectEpisode(item.videos[0]);
                         }
-                    });
+                    } else {
+                         this.showStatus("无法找到聚合信息");
+                    }
                 },
                 closePlayerModal() {
                     this.playerModalVisible = false;
@@ -480,7 +524,7 @@
                         container: '.artplayer-app',
                         url: video.video_url,
                         title: `${this.selectedItem.display_name} (${this.selectedSource.source_name}) - ${video.name}`,
-                        autoplay: false, // MODIFIED: Autoplay disabled
+                        autoplay: true,
                         autoSize: false,
                         setting: true,
                         flip: true,
