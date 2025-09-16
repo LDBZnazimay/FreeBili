@@ -9,7 +9,7 @@
     <script src="https://testingcf.jsdelivr.net/npm/artplayer@5.2.5/dist/artplayer.min.js"></script>
     <script src="https://testingcf.jsdelivr.net/npm/hls.js@1.6.10/dist/hls.min.js"></script>
     <style>
-        /* CSS styles are unchanged */
+        /* --- Base & Original Styles (largely unchanged) --- */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #333;
@@ -252,7 +252,6 @@
     
     <div id="app" class="container">
         <div :class="{ 'blurred-bg': isBlurred }"></div>
-        <!-- <h1>{{ site_config.site_name }}</h1> -->
         <form @submit.prevent="startSearch" class="search-form">
             <input type="text" v-model="keyword" placeholder="请输入关键词..." required>
             <button type="submit">搜索</button>
@@ -285,6 +284,7 @@
                         <a :href="activeVideo.video_url" target="_blank" rel="noopener noreferrer" class="webview-button">
                             在新标签页中打开
                         </a>
+                        <!-- <iframe  width=100% height=100% :src="activeVideo.video_url" title="description"></iframe> -->
                     </div>
                     <div v-else class="artplayer-app"></div>
                 </div>
@@ -382,8 +382,7 @@
                 playerModalVisible: false,
                 selectedItem: null,
                 activeVideo: null,
-                selectedSource: null,
-                doubanIdToOpen: null,
+                selectedSource: null
             },
             computed: {
                 isWebView() {
@@ -402,82 +401,50 @@
                 }
             },
             watch: {
+                // ##################################################
+                // ### START OF THE MODIFIED CODE ###
+                // ##################################################
                 activeVideo(newVideo) {
+                    // Step 1: Always destroy the previous Artplayer instance if it exists.
+                    // This is done synchronously before Vue updates the DOM.
                     if (this.artInstance) {
                         this.artInstance.destroy();
                         this.artInstance = null;
                     }
+
+                    // If there's no new video, do nothing further.
                     if (!newVideo) return;
+
+                    // Step 2: If the new video is a playable format (not a WebView),
+                    // initialize a new Artplayer instance.
+                    // We use $nextTick to ensure this runs AFTER Vue has updated the DOM
+                    // and the '.artplayer-app' div is ready.
                     if (!this.isWebView) {
                         this.$nextTick(() => {
                             this.initArtplayer(newVideo);
                         });
                     }
+                    // If the new video IS a WebView, we do nothing here. Vue's v-if
+                    // will automatically display the placeholder, and we've already
+                    // destroyed the old player.
                 },
+                // ##################################################
+                // ### END OF THE MODIFIED CODE ###
+                // ##################################################
                 selectedSource(newSource, oldSource) {
                     if (newSource && oldSource && newSource !== oldSource) {
                         if (newSource.videos && newSource.videos.length > 0) {
                             this.selectEpisode(newSource.videos[0]);
                         } else {
-                            this.activeVideo = null;
+                            this.activeVideo = null; // No videos in the new source
                         }
                     }
-                },
-                // ##################################################
-                // ### CODE REMOVED ###
-                // The watcher for `aggregatedResults` has been removed.
-                // Its logic is now correctly placed in the `onerror` handler of the event source.
-                // ##################################################
-            },
-            mounted() {
-                const params = this.getHashParams();
-                if (params.keyword) {
-                    this.keyword = params.keyword;
-                    if (params.douban_id) {
-                        this.doubanIdToOpen = params.douban_id;
-                    }
-                    this.startSearch(false);
                 }
             },
             methods: {
-                getHashParams() {
-                    const params = {};
-                    const hashString = window.location.hash.substring(1);
-                    if (hashString) {
-                        hashString.split('&').forEach(pair => {
-                            const parts = pair.split('=');
-                            if (parts.length === 2) {
-                                params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
-                            }
-                        });
-                    }
-                    return params;
-                },
-                updateHashParams(paramsToUpdate) {
-                    let currentParams = this.getHashParams();
-                    for (const key in paramsToUpdate) {
-                        const value = paramsToUpdate[key];
-                        if (value === null || value === undefined) {
-                            delete currentParams[key];
-                        } else {
-                            currentParams[key] = value;
-                        }
-                    }
-                    const newHash = Object.keys(currentParams)
-                        .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(currentParams[key])}`)
-                        .join('&');
-                    
-                    const newUrl = newHash ? `${window.location.pathname}${window.location.search}#${newHash}` : `${window.location.pathname}${window.location.search}`;
-                    history.replaceState(null, '', newUrl);
-                },
-                startSearch(updateHash = true) {
+                startSearch() {
                     if (this.eventSource) this.eventSource.close();
                     this.aggregatedResults = [];
-                    
-                    if (updateHash) {
-                        this.updateHashParams({ keyword: this.keyword, douban_id: null });
-                    }
-                    
                     this.statusMessage = '🔍 正在努力搜索中，请稍候...';
                     this.isStatusVisible = true;
                     const url = `/search?keyword=${encodeURIComponent(this.keyword)}`;
@@ -496,8 +463,8 @@
                             if (item.episode_count > 0) {
                                 resolution = await getVideoResolution(item.videos[0].video_url);
                             }
-                            item.resolution = resolution;
-                            item.resolution_display = resolution === '网页' ? '跳转网页播放' : resolution;
+                            item.resolution = resolution; // For sorting
+                            item.resolution_display = resolution === '网页' ? '跳转网页播放' : resolution; // For display
 
                             return item;
                         }));
@@ -522,21 +489,6 @@
                         this.statusMessage = '搜索完成';
                         setTimeout(() => { this.isStatusVisible = false; }, 2000);
                         this.eventSource.close();
-
-                        // ##################################################
-                        // ### START OF MODIFIED CODE ###
-                        // This logic now runs ONLY after the search is fully complete.
-                        if (this.doubanIdToOpen) {
-                            const foundItem = this.aggregatedResults.find(item => item.vod_douban_id == this.doubanIdToOpen);
-                            if (foundItem) {
-                                this.openPlayerModal(foundItem);
-                            } else {
-                                // Optional: Notify user if the specific douban_id wasn't found in the results
-                                this.showStatus(`未找到豆瓣ID为 ${this.doubanIdToOpen} 的影片`, 3000);
-                            }
-                            this.doubanIdToOpen = null; // Reset after attempting to open
-                        }
-                        // ### END OF MODIFIED CODE ###
                     };
                 },
                 parseResolution(res) {
@@ -546,7 +498,7 @@
                     }
                     if (res === '网页') return -2;
                     if (res === '未知') return -1;
-                    return 0;
+                    return 0; // for '获取失败' etc.
                 },
                 openPlayerModal(aggregatedItem) {
                     this.selectedItem = aggregatedItem; 
@@ -554,21 +506,20 @@
                     this.$nextTick(() => {
                         if (this.sortedSources && this.sortedSources.length > 0) {
                             this.playerModalVisible = true;
-                            this.selectedSource = this.sortedSources[0];
+                            this.selectedSource = this.sortedSources[0]; // Auto-select the best (first) source
                             this.selectEpisode(this.sortedSources[0].videos[0]);
-                            this.updateHashParams({ douban_id: aggregatedItem.vod_douban_id });
                         } else {
                             this.showStatus("该项目没有可播放的视频源");
-                            this.selectedItem = null;
+                            this.selectedItem = null; // Clean up if no sources are found
                         }
                     });
                 },
                 closePlayerModal() {
                     this.playerModalVisible = false;
+                    // The activeVideo watcher will handle destroying the player instance now
                     this.selectedItem = null;
                     this.activeVideo = null;
                     this.selectedSource = null;
-                    this.updateHashParams({ douban_id: null });
                 },
                 selectEpisode(video) {
                     this.activeVideo = video;
