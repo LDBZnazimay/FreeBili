@@ -11,19 +11,16 @@
 - **SSE流式接口**：流式API接口，解决资源站点API有的响应时间长，有的响应时间短，时间短响应的接口会立刻返回
 - **多源分辨率自动排序**: 自动获取各源的第一个视频的分比率，将高分辨率排在前面
 - **聚合功能**: 将相同 douban id 的视频聚合到一块，页面更加清爽易用
+- **支持hash链接直接跳转到视频**: 支持链接一键直达视频
 - **极简部署**：一条 Docker 命令即可启动项目
 
-## ✨ 新功能 RoadMap
-- [ ] 支持收藏视频，打开收藏自动更新集数
-- [ ] 支持链接直接跳转到视频，指定集数
-
 ## 页面展示
-![开始界面1](docs/1.jpg)
-![开始界面2](docs/2.jpg)
+![开始界面1](docs/1.png)
+![开始界面2](docs/2.png)
 
 ## Docker 部署 (推荐)
 ```
-docker run -d -p 8000:8000 silvery886/freebili:1.13
+docker run -d -p 8000:8000 silvery886/freebili:1.21
 ```
 
 ## 开发启动
@@ -47,7 +44,7 @@ uv run fastapi dev main.py
     "base_urls": [
         {
             "name": "资源站点1",
-            "base_url": "http://xxx.com/api.php/provide/vod"
+            "base_url": "http://example.com/api.php/provide/vod"
         },
     ]
 }
@@ -60,4 +57,4 @@ uv run fastapi dev main.py
 
 **timeout** ： 并行接口超时时间，单位秒，超过这个时间对应资源站API会被跳过
 
-**base_url** : http://xxx.com/api.php/provide/vod 注意vod后不要加/
+**base_url** : http://example.com/api.php/provide/vod 注意vod后不要加/
