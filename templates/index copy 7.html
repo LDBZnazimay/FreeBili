@@ -252,6 +252,7 @@
     
     <div id="app" class="container">
         <div :class="{ 'blurred-bg': isBlurred }"></div>
+        <!-- <h1>{{ site_config.site_name }}</h1> -->
         <form @submit.prevent="startSearch" class="search-form">
             <input type="text" v-model="keyword" placeholder="请输入关键词..." required>
             <button type="submit">搜索</button>
@@ -414,11 +415,19 @@
                     }
                 },
                 selectedSource(newSource, oldSource) {
-                    // MODIFIED: When changing sources, load the last played episode for that source
-                    if (newSource && newSource !== oldSource) {
-                        this.findAndSelectEpisode(newSource);
+                    if (newSource && oldSource && newSource !== oldSource) {
+                        if (newSource.videos && newSource.videos.length > 0) {
+                            this.selectEpisode(newSource.videos[0]);
+                        } else {
+                            this.activeVideo = null;
+                        }
                     }
                 },
+                // ##################################################
+                // ### CODE REMOVED ###
+                // The watcher for `aggregatedResults` has been removed.
+                // Its logic is now correctly placed in the `onerror` handler of the event source.
+                // ##################################################
             },
             mounted() {
                 const params = this.getHashParams();
@@ -514,15 +523,20 @@
                         setTimeout(() => { this.isStatusVisible = false; }, 2000);
                         this.eventSource.close();
 
+                        // ##################################################
+                        // ### START OF MODIFIED CODE ###
+                        // This logic now runs ONLY after the search is fully complete.
                         if (this.doubanIdToOpen) {
                             const foundItem = this.aggregatedResults.find(item => item.vod_douban_id == this.doubanIdToOpen);
                             if (foundItem) {
                                 this.openPlayerModal(foundItem);
                             } else {
+                                // Optional: Notify user if the specific douban_id wasn't found in the results
                                 this.showStatus(`未找到豆瓣ID为 ${this.doubanIdToOpen} 的影片`, 3000);
                             }
                             this.doubanIdToOpen = null; // Reset after attempting to open
                         }
+                        // ### END OF MODIFIED CODE ###
                     };
                 },
                 parseResolution(res) {
@@ -534,81 +548,30 @@
                     if (res === '未知') return -1;
                     return 0;
                 },
-                // ##################################################
-                // ### START OF MODIFIED/NEW METHODS ###
-                // ##################################################
-                savePlaybackPosition(doubanId, sourceName, episodeName) {
-                    if (!doubanId || !sourceName || !episodeName) return;
-                    const key = `playbackPosition_${doubanId}_${sourceName}`;
-                    try {
-                        localStorage.setItem(key, episodeName);
-                    } catch (e) {
-                        console.error("Failed to save playback position to localStorage:", e);
-                    }
-                },
-                getPlaybackPosition(doubanId, sourceName) {
-                    if (!doubanId || !sourceName) return null;
-                    const key = `playbackPosition_${doubanId}_${sourceName}`;
-                    try {
-                        return localStorage.getItem(key);
-                    } catch (e) {
-                        console.error("Failed to get playback position from localStorage:", e);
-                        return null;
-                    }
-                },
-                findAndSelectEpisode(source) {
-                    if (!source || !source.videos || source.videos.length === 0) {
-                        this.activeVideo = null;
-                        return;
-                    }
-                    const lastPlayedEpisodeName = this.getPlaybackPosition(
-                        this.selectedItem.vod_douban_id,
-                        source.source_name
-                    );
-                    let episodeToPlay = null;
-                    if (lastPlayedEpisodeName) {
-                        episodeToPlay = source.videos.find(v => v.name === lastPlayedEpisodeName);
-                    }
-                    // Select the last played episode, or default to the first one
-                    this.selectEpisode(episodeToPlay || source.videos[0]);
-                },
                 openPlayerModal(aggregatedItem) {
                     this.selectedItem = aggregatedItem; 
+                    
                     this.$nextTick(() => {
                         if (this.sortedSources && this.sortedSources.length > 0) {
                             this.playerModalVisible = true;
+                            this.selectedSource = this.sortedSources[0];
+                            this.selectEpisode(this.sortedSources[0].videos[0]);
                             this.updateHashParams({ douban_id: aggregatedItem.vod_douban_id });
-                            
-                            // Set the initial source and let the logic find the correct episode
-                            const initialSource = this.sortedSources[0];
-                            this.selectedSource = initialSource;
-                            this.findAndSelectEpisode(initialSource);
                         } else {
                             this.showStatus("该项目没有可播放的视频源");
                             this.selectedItem = null;
                         }
                     });
                 },
-                selectEpisode(video) {
-                    this.activeVideo = video;
-                    // Save the current episode position when an episode is selected
-                    if (this.selectedItem && this.selectedSource && video) {
-                        this.savePlaybackPosition(
-                            this.selectedItem.vod_douban_id,
-                            this.selectedSource.source_name,
-                            video.name
-                        );
-                    }
-                },
-                // ##################################################
-                // ### END OF MODIFIED/NEW METHODS ###
-                // ##################################################
                 closePlayerModal() {
                     this.playerModalVisible = false;
                     this.selectedItem = null;
                     this.activeVideo = null;
                     this.selectedSource = null;
                     this.updateHashParams({ douban_id: null });
+                },
+                selectEpisode(video) {
+                    this.activeVideo = video;
                 },
                 initArtplayer(video) {
                     const playerOptions = {
