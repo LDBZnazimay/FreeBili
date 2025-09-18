@@ -21,6 +21,9 @@
             background-repeat: no-repeat;
             background-attachment: fixed;
         }
+        a:hover {
+            text-decoration: none !important; /* 悬停时仍然不显示下划线 */
+        }
         .blurred-bg {
             position: fixed;
             top: 0;
@@ -74,6 +77,8 @@
             overflow: hidden; text-overflow: ellipsis;
         }
         .card-source { font-size: 0.55em; color: #555; margin: 3px 0 0 0; }
+        .card-source a { color: inherit; text-decoration: none; }
+        .card-source a:hover { text-decoration: underline; color: #007bff; }
         
         /* --- Unified Player Modal Styles --- */
         .modal {
@@ -268,7 +273,11 @@
                 </div>
                 <div class="card-details">
                     <h3>[[ item.display_name ]]</h3>
-                    <p class="card-source">豆瓣ID: [[ item.vod_douban_id ]]</p>
+                    <p class="card-source">
+                        <a :href="'https://movie.douban.com/subject/' + item.vod_douban_id + '/'" target="_blank" rel="noopener noreferrer" @click.stop>
+                            豆瓣ID: [[ item.vod_douban_id ]]
+                        </a>
+                    </p>
                 </div>
             </div>
         </div>
@@ -383,6 +392,8 @@
                 activeVideo: null,
                 selectedSource: null,
                 doubanIdToOpen: null,
+                originalTitle: '', // NEW: Store original page title
+                currentSearchTitle: '', // NEW: Store title for current search results
             },
             computed: {
                 isWebView() {
@@ -414,13 +425,13 @@
                     }
                 },
                 selectedSource(newSource, oldSource) {
-                    // MODIFIED: When changing sources, load the last played episode for that source
                     if (newSource && newSource !== oldSource) {
                         this.findAndSelectEpisode(newSource);
                     }
                 },
             },
             mounted() {
+                this.originalTitle = document.title; // NEW: Save initial title
                 const params = this.getHashParams();
                 if (params.keyword) {
                     this.keyword = params.keyword;
@@ -469,6 +480,10 @@
                         this.updateHashParams({ keyword: this.keyword, douban_id: null });
                     }
                     
+                    // MODIFIED: Update page title on search start
+                    this.currentSearchTitle = `[搜索结果] ${this.keyword}`;
+                    document.title = `[搜索中] ${this.keyword}`;
+                    
                     this.statusMessage = '🔍 正在努力搜索中，请稍候...';
                     this.isStatusVisible = true;
                     const url = `/search?keyword=${encodeURIComponent(this.keyword)}`;
@@ -511,6 +526,7 @@
 
                     this.eventSource.onerror = () => {
                         this.statusMessage = '搜索完成';
+                        document.title = this.currentSearchTitle; // MODIFIED: Update title on search complete
                         setTimeout(() => { this.isStatusVisible = false; }, 2000);
                         this.eventSource.close();
 
@@ -534,9 +550,33 @@
                     if (res === '未知') return -1;
                     return 0;
                 },
+                
                 // ##################################################
-                // ### START OF MODIFIED/NEW METHODS ###
+                // ### START OF NEW/MODIFIED METHODS ###
                 // ##################################################
+                
+                // NEW: Saves the last played source name for a given douban ID
+                saveLastPlayedSource(doubanId, sourceName) {
+                    if (!doubanId || !sourceName) return;
+                    try {
+                        localStorage.setItem(`lastSource_${doubanId}`, sourceName);
+                    } catch (e) {
+                        console.error("Failed to save last source to localStorage:", e);
+                    }
+                },
+
+                // NEW: Retrieves the last played source name for a given douban ID
+                getLastPlayedSource(doubanId) {
+                    if (!doubanId) return null;
+                    try {
+                        return localStorage.getItem(`lastSource_${doubanId}`);
+                    } catch (e) {
+                        console.error("Failed to get last source from localStorage:", e);
+                        return null;
+                    }
+                },
+
+                // MODIFIED: Saves episode name for a specific source
                 savePlaybackPosition(doubanId, sourceName, episodeName) {
                     if (!doubanId || !sourceName || !episodeName) return;
                     const key = `playbackPosition_${doubanId}_${sourceName}`;
@@ -546,6 +586,8 @@
                         console.error("Failed to save playback position to localStorage:", e);
                     }
                 },
+
+                // MODIFIED: Retrieves episode name for a specific source
                 getPlaybackPosition(doubanId, sourceName) {
                     if (!doubanId || !sourceName) return null;
                     const key = `playbackPosition_${doubanId}_${sourceName}`;
@@ -556,6 +598,41 @@
                         return null;
                     }
                 },
+                
+                // MODIFIED: Now finds the last played source first, then the episode
+                openPlayerModal(aggregatedItem) {
+                    this.selectedItem = aggregatedItem; 
+                    document.title = `${aggregatedItem.display_name} ${aggregatedItem.vod_douban_id}`; // Title change
+
+                    this.$nextTick(() => {
+                        if (!this.sortedSources || this.sortedSources.length === 0) {
+                            this.showStatus("该项目没有可播放的视频源");
+                            this.selectedItem = null;
+                            document.title = this.currentSearchTitle || this.originalTitle; // Revert title
+                            return;
+                        }
+
+                        this.playerModalVisible = true;
+                        this.updateHashParams({ douban_id: aggregatedItem.vod_douban_id });
+
+                        const lastSourceName = this.getLastPlayedSource(aggregatedItem.vod_douban_id);
+                        let initialSource = null;
+                        
+                        if (lastSourceName) {
+                           initialSource = this.sortedSources.find(s => s.source_name === lastSourceName);
+                        }
+                        
+                        // If saved source isn't found or doesn't exist, default to the best resolution
+                        if (!initialSource) {
+                            initialSource = this.sortedSources[0];
+                        }
+                        
+                        this.selectedSource = initialSource;
+                        // The watcher on `selectedSource` will then call `findAndSelectEpisode`
+                    });
+                },
+
+                // MODIFIED: Finds last played episode for the currently selected source
                 findAndSelectEpisode(source) {
                     if (!source || !source.videos || source.videos.length === 0) {
                         this.activeVideo = null;
@@ -565,51 +642,47 @@
                         this.selectedItem.vod_douban_id,
                         source.source_name
                     );
+                    
                     let episodeToPlay = null;
                     if (lastPlayedEpisodeName) {
                         episodeToPlay = source.videos.find(v => v.name === lastPlayedEpisodeName);
                     }
-                    // Select the last played episode, or default to the first one
+                    
                     this.selectEpisode(episodeToPlay || source.videos[0]);
                 },
-                openPlayerModal(aggregatedItem) {
-                    this.selectedItem = aggregatedItem; 
-                    this.$nextTick(() => {
-                        if (this.sortedSources && this.sortedSources.length > 0) {
-                            this.playerModalVisible = true;
-                            this.updateHashParams({ douban_id: aggregatedItem.vod_douban_id });
-                            
-                            // Set the initial source and let the logic find the correct episode
-                            const initialSource = this.sortedSources[0];
-                            this.selectedSource = initialSource;
-                            this.findAndSelectEpisode(initialSource);
-                        } else {
-                            this.showStatus("该项目没有可播放的视频源");
-                            this.selectedItem = null;
-                        }
-                    });
-                },
+
+                // MODIFIED: Now also saves the source name when an episode is selected
                 selectEpisode(video) {
                     this.activeVideo = video;
-                    // Save the current episode position when an episode is selected
                     if (this.selectedItem && this.selectedSource && video) {
+                        // Save the last played episode for this specific source
                         this.savePlaybackPosition(
                             this.selectedItem.vod_douban_id,
                             this.selectedSource.source_name,
                             video.name
                         );
+                        // Also save this source as the last one used for this movie
+                        this.saveLastPlayedSource(
+                            this.selectedItem.vod_douban_id,
+                            this.selectedSource.source_name
+                        );
                     }
                 },
-                // ##################################################
-                // ### END OF MODIFIED/NEW METHODS ###
-                // ##################################################
+
+                // MODIFIED: Resets page title on close
                 closePlayerModal() {
                     this.playerModalVisible = false;
                     this.selectedItem = null;
                     this.activeVideo = null;
                     this.selectedSource = null;
                     this.updateHashParams({ douban_id: null });
+                    document.title = this.currentSearchTitle || this.originalTitle;
                 },
+                
+                // ##################################################
+                // ### END OF NEW/MODIFIED METHODS ###
+                // ##################################################
+
                 initArtplayer(video) {
                     const playerOptions = {
                         container: '.artplayer-app',

@@ -1,9 +1,8 @@
 {
-    "site_name": "自由哔站",
-    "pc_background_image_url": "https://tu.ltyuanfang.cn/api/fengjing.php",
-    "phone_background_image_url": "https://tu.ltyuanfang.cn/api/fengjing.php",
-    "timeout": 5,
-    "base_urls": [
-        
-    ]
+  "site_name": "自由哔站",
+  "pc_background_image_url": "https://tu.ltyuanfang.cn/api/fengjing.php",
+  "phone_background_image_url": "https://tu.ltyuanfang.cn/api/fengjing.php",
+  "timeout": 5,
+  "base_urls": [
+  ]
 }
