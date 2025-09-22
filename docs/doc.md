@@ -1,8 +1,8 @@
 docker run -d -p 8000:8000 silvery886/freebili:1.0
 
-sudo docker build -t freebili:1.23 .
-sudo docker tag freebili:1.23 silvery886/freebili:1.23 
-sudo docker push silvery886/freebili:1.23
+sudo docker build -t freebili:1.24 .
+sudo docker tag freebili:1.24 silvery886/freebili:1.24
+sudo docker push silvery886/freebili:1.24
 
 
 http://caiji.dyttzyapi.com/api.php/provide/vod/from/dyttm3u8/at/json?ac=detail&ids=8298 
