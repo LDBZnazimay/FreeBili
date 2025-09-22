@@ -56,15 +56,28 @@ async def log_requests(request: Request, call_next):
         # If it is, just pass the request to the next handler and return
         response = await call_next(request)
         return response
+    
+    # 优先从 Cloudflare 专用的头中获取真实IP
+    real_ip = request.headers.get("CF-Connecting-IP")
 
-    # Extract client information
-    client_ip = request.client.host
+    # 如果没有，尝试从通用的 X-Forwarded-For 头获取
+    # 注意：这个头可以被伪造，如果你在Cloudflare后还有其他代理，需要更复杂的处理
+    if not real_ip:
+        real_ip = request.headers.get("X-Forwarded-For")
+        if real_ip:
+            # X-Forwarded-For 可能会包含多个IP，取第一个
+            real_ip = real_ip.split(',')[0].strip()
+
+    # 如果以上都没有，就回退到原始连接IP
+    if not real_ip:
+        real_ip = request.client.host
+
     user_agent = request.headers.get('user-agent', 'unknown')
 
     decoded_url = unquote(str(request.url))
 
     # Log incoming request details
-    logging.info(f"Request: {request.method} {decoded_url} | IP: {client_ip} | User-Agent: {user_agent}")
+    logging.info(f"Request: {request.method} {decoded_url} | IP: {real_ip} | User-Agent: {user_agent}")
     
     response = await call_next(request)
     process_time = time.time() - start_time
