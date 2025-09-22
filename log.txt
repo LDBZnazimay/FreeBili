@@ -1,0 +1,4 @@
+2025-09-22 10:19:50,284 - INFO - Shutting down
+2025-09-22 10:19:50,390 - INFO - Waiting for application shutdown.
+2025-09-22 10:19:50,391 - INFO - Application shutdown complete.
+2025-09-22 10:19:50,391 - INFO - Finished server process [24844]

@@ -3,13 +3,28 @@ import json
 from typing import List, Dict, Any
 import httpx
 from fastapi import FastAPI, Request, HTTPException
-from starlette.responses import StreamingResponse
+from starlette.responses import StreamingResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from utils import get_config
 from pydantic import BaseModel
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+import logging
+import time
+from urllib.parse import unquote
+import os
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("log.txt", encoding="utf-8"),
+        logging.StreamHandler() # Also log to console
+    ]
+)
+# 设置 httpx 日志记录器的级别为 WARNING
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 site_config = get_config()
 
@@ -28,6 +43,37 @@ class SiteConfigModel(BaseModel):
 
 # 初始化FastAPI应用
 app = FastAPI()
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """
+    Middleware to log incoming requests.
+    """
+    start_time = time.time()
+    excluded_paths = ["/log_file"]
+
+    # Check if the request path is in the excluded list
+    if request.url.path in excluded_paths:
+        # If it is, just pass the request to the next handler and return
+        response = await call_next(request)
+        return response
+
+    # Extract client information
+    client_ip = request.client.host
+    user_agent = request.headers.get('user-agent', 'unknown')
+
+    decoded_url = unquote(str(request.url))
+
+    # Log incoming request details
+    logging.info(f"Request: {request.method} {decoded_url} | IP: {client_ip} | User-Agent: {user_agent}")
+    
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    # Log outgoing response details
+    # logging.info(f"Response: Status Code {response.status_code} | Process Time: {process_time:.4f}s")
+    
+    return response
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # 生产请改为具体域名
@@ -100,7 +146,7 @@ async def fetch_and_process(client: httpx.AsyncClient, source: Dict[str, str], k
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     try:
-        print(f"开始搜索: {name} -> {url}")
+        # print(f"开始搜索: {name} -> {url}")
         # 设置5秒超时
         response = await client.get(
             url, 
@@ -113,17 +159,17 @@ async def fetch_and_process(client: httpx.AsyncClient, source: Dict[str, str], k
         data = response.json()
         
         if data.get("code") == 1 and data.get("list"):
-            print(f"成功: {name}")
+            # print(f"成功: {name}")
             return parse_cms_data(name, data["list"])
         else:
-            print(f"数据为空或格式错误: {name}, message: {data.get('msg')}")
+            # print(f"数据为空或格式错误: {name}, message: {data.get('msg')}")
             return None
             
     except httpx.TimeoutException:
-        print(f"超时: {name}")
+        # print(f"超时: {name}")
         return None
     except Exception as e:
-        print(f"请求或处理时发生错误: {name}, 错误: {e}")
+        # print(f"请求或处理时发生错误: {name}, 错误: {e}")
         return None
 
 
@@ -224,3 +270,31 @@ async def read_root(request: Request):
     
     # 返回模板响应
     return templates.TemplateResponse("index.html", template_variables)
+
+def file_iterator(file_path: str, chunk_size: int = 4096):
+    """
+    一个同步生成器，用于分块读取文件。
+    """
+    with open(file_path, "r", encoding="utf-8") as f:
+        while chunk := f.read(chunk_size):
+            yield chunk
+
+@app.get("/log_file")
+async def get_log_file():
+    """
+    使用同步生成器流式传输日志文件。
+    """
+    log_file_path = "log.txt"
+
+    if not os.path.exists(log_file_path):
+        raise HTTPException(status_code=404, detail="Log file not found.")
+
+    # 将同步生成器传递给 StreamingResponse
+    # FastAPI 会自动在后台线程中运行它
+    return StreamingResponse(
+        file_iterator(log_file_path), 
+        media_type="text/plain",
+        headers={
+            "Content-Disposition": "inline"
+        }
+    )
